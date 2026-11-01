@@ -13,6 +13,17 @@ _HASH_NAME = "sha256"
 _ITERATIONS = 600_000
 
 
+def validate_secret_key() -> str:
+    """Return the configured JWT key, rejecting empty or weak defaults."""
+    secret_key = get_settings().secret_key
+    if len(secret_key.encode("utf-8")) < 32:
+        raise RuntimeError(
+            "SECRET_KEY must be configured with at least 32 bytes. "
+            "Generate a unique value and store it in your local .env file."
+        )
+    return secret_key
+
+
 def hash_password(password: str) -> str:
     salt = secrets.token_bytes(16)
     digest = hashlib.pbkdf2_hmac(_HASH_NAME, password.encode(), salt, _ITERATIONS)
@@ -44,7 +55,7 @@ def create_access_token(subject: str) -> str:
     )
     return jwt.encode(
         {"sub": subject, "exp": expires},
-        get_settings().secret_key,
+        validate_secret_key(),
         algorithm=ALGORITHM,
     )
 
@@ -52,7 +63,7 @@ def create_access_token(subject: str) -> str:
 def decode_access_token(token: str) -> str | None:
     try:
         payload = jwt.decode(
-            token, get_settings().secret_key, algorithms=[ALGORITHM]
+            token, validate_secret_key(), algorithms=[ALGORITHM]
         )
         subject = payload.get("sub")
         return subject if isinstance(subject, str) else None

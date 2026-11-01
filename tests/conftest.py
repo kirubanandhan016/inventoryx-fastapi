@@ -4,12 +4,18 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.core.config import get_settings
 from app.database.session import Base, get_db
 from app.main import app
 
 
 @pytest.fixture
-def client():
+def client(monkeypatch):
+    monkeypatch.setattr(
+        get_settings(),
+        "secret_key",
+        "test-only-secret-key-with-at-least-32-bytes",
+    )
     engine = create_engine(
         "sqlite://",
         connect_args={"check_same_thread": False},

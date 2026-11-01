@@ -1,50 +1,202 @@
 # InventoryX API
 
-A FastAPI inventory service with JWT authentication, product management, stock
-adjustments, and customer orders.
+A FastAPI inventory and order management API with JWT authentication, product and category management, stock adjustments, order placement, and inventory transaction history.
 
-## Run locally
+## Features
 
-Use Python 3.10 or newer:
+- User registration, login, and authenticated user lookup
+- Public product and category reads
+- Authenticated product and category management
+- Stock adjustments with an audit record
+- Order placement and cancellation with stock updates
+- SQLAlchemy ORM and Alembic database migrations
+- Request validation and structured HTTP errors
+- Pytest API tests using an isolated in-memory SQLite database
+
+## Technology stack
+
+- Python 3.10+
+- FastAPI and Uvicorn
+- SQLAlchemy 2.x
+- Alembic
+- Pydantic Settings
+- SQLite by default; SQLAlchemy database URL configuration supports other SQLAlchemy-supported databases when the appropriate driver is installed
+- pytest and HTTPX
+
+## Requirements
+
+- Python 3.10 or newer
+- pip
+- Git
+
+## Local setup
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/kirubanandhan016/inventoryx-fastapi.git
+cd inventoryx-fastapi
+```
+
+### 2. Create and activate a virtual environment
+
+Windows PowerShell:
 
 ```powershell
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+```
+
+macOS / Linux:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+### 3. Install dependencies
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+### 4. Configure environment variables
+
+Copy the example file:
+
+Windows PowerShell:
+
+```powershell
 Copy-Item .env.example .env
 ```
 
-Set a unique `SECRET_KEY` in `.env` before exposing the service. Start the API:
+macOS / Linux:
 
-```powershell
+```bash
+cp .env.example .env
+```
+
+Generate a unique JWT signing key:
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(48))"
+```
+
+Set the generated value as `SECRET_KEY` in `.env`. The application refuses to start when the key is empty or shorter than 32 bytes. Never commit your `.env` file or reuse the example key.
+
+The default database is local SQLite:
+
+```env
+DATABASE_URL=sqlite:///./inventoryx.db
+```
+
+### 5. Apply migrations
+
+```bash
 alembic upgrade head
+```
+
+### 6. Start the API
+
+```bash
 uvicorn app.main:app --reload
 ```
 
-Interactive API documentation is available at `http://127.0.0.1:8000/docs`.
-The default database is SQLite (`inventoryx.db`). Apply schema changes with
-`alembic upgrade head` before starting the service.
+- API: http://127.0.0.1:8000
+- Swagger UI: http://127.0.0.1:8000/docs
+- ReDoc: http://127.0.0.1:8000/redoc
+- Health check: http://127.0.0.1:8000/health
 
 ## API overview
 
-- `POST /auth/register`, `POST /auth/login`, `GET /auth/me`
-- `GET /categories`, `GET /categories/{id}` (public)
-- `POST /categories`, `PATCH /categories/{id}`, `DELETE /categories/{id}` (authenticated)
-- `GET /products`, `GET /products/{id}` (public)
-- `POST /products`, `PATCH /products/{id}`, `DELETE /products/{id}` (authenticated)
-- `POST /inventory/{product_id}/adjust` and `GET /inventory/transactions` (authenticated)
-- `POST /orders`, `GET /orders`, `GET /orders/{id}`, `POST /orders/{id}/cancel` (authenticated)
-- `GET /health`
+| Method | Endpoint | Access | Purpose |
+|---|---|---|---|
+| POST | `/auth/register` | Public | Register an account |
+| POST | `/auth/login` | Public | Obtain a bearer token using OAuth2 form fields |
+| GET | `/auth/me` | Authenticated | Read the current account |
+| GET | `/categories` | Public | List categories |
+| GET | `/categories/{category_id}` | Public | Read one category |
+| POST | `/categories` | Authenticated | Create a category |
+| PATCH | `/categories/{category_id}` | Authenticated | Update a category |
+| DELETE | `/categories/{category_id}` | Authenticated | Delete a category |
+| GET | `/products` | Public | List products; supports `offset` and `limit` |
+| GET | `/products/{product_id}` | Public | Read one product |
+| POST | `/products` | Authenticated | Create a product |
+| PATCH | `/products/{product_id}` | Authenticated | Update product fields |
+| DELETE | `/products/{product_id}` | Authenticated | Delete an unreferenced product |
+| POST | `/inventory/{product_id}/adjust` | Authenticated | Adjust stock and write an audit record |
+| GET | `/inventory/transactions` | Authenticated | List stock adjustments; supports product filter and pagination |
+| POST | `/orders` | Authenticated | Place an order |
+| GET | `/orders` | Authenticated | List the current account's orders |
+| GET | `/orders/{order_id}` | Authenticated | Read an owned order |
+| POST | `/orders/{order_id}/cancel` | Authenticated | Cancel an owned order and restore stock |
 
-Login accepts OAuth2 form fields `username` (the account email) and `password`.
-Use the returned bearer token to access protected endpoints. Product stock is
-updated atomically with order placement/cancellation and each stock change is
-recorded in the inventory transaction history.
+The interactive OpenAPI documentation at `/docs` includes request and response schemas.
+
+## Authentication example
+
+Register:
+
+```bash
+curl -X POST http://127.0.0.1:8000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"dev@example.com","full_name":"API Developer","password":"a-strong-password"}'
+```
+
+Log in (OAuth2 form data):
+
+```bash
+curl -X POST http://127.0.0.1:8000/auth/login \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=dev%40example.com&password=a-strong-password"
+```
+
+Use the returned `access_token` in the `Authorization: Bearer <token>` header for protected endpoints.
 
 ## Tests
 
-```powershell
-pytest
+Install dependencies, then run:
+
+```bash
+python -m pytest -v
 ```
 
-Tests use an isolated in-memory SQLite database.
+Tests use an isolated in-memory SQLite database. A GitHub Actions workflow also runs the test suite for pushes and pull requests.
+
+## Database migrations
+
+Create a migration after changing SQLAlchemy models:
+
+```bash
+alembic revision --autogenerate -m "describe schema change"
+alembic upgrade head
+```
+
+To inspect the current migration revision:
+
+```bash
+alembic current
+```
+
+Review autogenerated migrations before applying them. Do not edit an already-applied migration to change database history.
+
+## Security notes
+
+- Configure a unique JWT signing key of at least 32 bytes.
+- Store credentials only in local environment variables.
+- The `.env` file and local database files should remain untracked.
+- Use HTTPS and a production secrets manager when deploying.
+- Review authorization policy before exposing inventory write operations publicly.
+
+## Current scope and limitations
+
+- SQLite is the default local database.
+- Automated tests use SQLite; PostgreSQL behavior and concurrency should be verified against a real PostgreSQL service before production use.
+- This repository is an educational portfolio project, not a production-certified inventory platform.
+
+## Author
+
+**Kirubanandhan V**
+
+- GitHub: https://github.com/kirubanandhan016
+- LinkedIn: https://www.linkedin.com/in/kirubanandhan-v-98bb83443/

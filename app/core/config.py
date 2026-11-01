@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     app_name: str = "InventoryX API"
     database_url: str = "sqlite:///./inventoryx.db"
-    secret_key: str = "change-this-secret-before-deploying"
+    secret_key: str = ""
     access_token_expire_minutes: int = 30
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
