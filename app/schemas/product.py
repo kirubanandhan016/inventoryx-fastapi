@@ -1,7 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class ProductCreate(BaseModel):
@@ -12,6 +12,11 @@ class ProductCreate(BaseModel):
     quantity: int = Field(default=0, ge=0)
     category_id: int | None = Field(default=None, gt=0)
 
+    @field_validator("sku", "name", mode="before")
+    @classmethod
+    def strip_required_text(cls, value: object) -> object:
+        return value.strip() if isinstance(value, str) else value
+
 
 class ProductUpdate(BaseModel):
     sku: str | None = Field(default=None, min_length=1, max_length=64)
@@ -21,6 +26,18 @@ class ProductUpdate(BaseModel):
         default=None, gt=0, max_digits=10, decimal_places=2
     )
     category_id: int | None = Field(default=None, gt=0)
+
+    @field_validator("sku", "name", mode="before")
+    @classmethod
+    def strip_required_text(cls, value: object) -> object:
+        return value.strip() if isinstance(value, str) else value
+
+    @model_validator(mode="after")
+    def reject_null_for_required_fields(self) -> "ProductUpdate":
+        for field_name in ("sku", "name", "price"):
+            if field_name in self.model_fields_set and getattr(self, field_name) is None:
+                raise ValueError(f"{field_name} cannot be null")
+        return self
 
 
 class ProductRead(BaseModel):
