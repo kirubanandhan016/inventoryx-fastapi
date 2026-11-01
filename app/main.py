@@ -1,9 +1,24 @@
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 
 from app.core.config import get_settings
+from app.core.security import validate_secret_key
 from app.routers import auth, categories, inventory, orders, products
 
-app = FastAPI(title=get_settings().app_name, version="1.0.0")
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    validate_secret_key()
+    yield
+
+
+app = FastAPI(
+    title=get_settings().app_name,
+    version="1.0.0",
+    lifespan=lifespan,
+)
 
 app.include_router(auth.router)
 app.include_router(categories.router)
