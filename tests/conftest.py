@@ -1,3 +1,11 @@
+import os
+
+# Test-only secret. Production runs must provide their own SECRET_KEY.
+os.environ.setdefault(
+    "SECRET_KEY",
+    "inventoryx-test-only-secret-key-never-use-in-production-48",
+)
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
