@@ -6,7 +6,6 @@ from pydantic import ValidationError
 
 from app.core.config import Settings, get_settings
 from app.core.security import ALGORITHM, decode_access_token
-from tests.conftest import register_and_login
 
 
 def test_register_login_and_read_profile(client):
@@ -126,6 +125,9 @@ def test_settings_reject_missing_or_short_secret(monkeypatch):
 
 
 def test_settings_reject_non_positive_token_lifetime(monkeypatch):
-    monkeypatch.setenv("SECRET_KEY", "inventoryx-test-only-secret-key-never-use-in-production-48")
+    monkeypatch.setenv(
+        "SECRET_KEY",
+        "inventoryx-test-only-secret-key-never-use-in-production-48",
+    )
     with pytest.raises(ValidationError):
         Settings(_env_file=None, access_token_expire_minutes=0)
