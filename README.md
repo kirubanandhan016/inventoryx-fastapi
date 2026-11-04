@@ -1,5 +1,7 @@
 # InventoryX API
 
+[![InventoryX tests](https://github.com/kirubanandhan016/inventoryx-fastapi/actions/workflows/tests.yml/badge.svg)](https://github.com/kirubanandhan016/inventoryx-fastapi/actions/workflows/tests.yml)
+
 Inventory and order management REST API built with Python and FastAPI.
 
 InventoryX demonstrates backend workflows for product and category management, stock adjustments, order placement and cancellation, and inventory transaction history.
@@ -18,7 +20,7 @@ InventoryX demonstrates backend workflows for product and category management, s
 
 ## Technology stack
 
-Python 3.10+ · FastAPI · SQLAlchemy · Alembic · SQLite · python-jose · Pytest
+Python 3.10+ · FastAPI · SQLAlchemy · Alembic · SQLite · PostgreSQL (psycopg) · python-jose · Pytest
 
 ## Architecture
 
@@ -93,7 +95,7 @@ alembic upgrade head
 uvicorn app.main:app --reload
 ```
 
-The default local database is SQLite. The migration directory is the schema-change source of truth; do not rely on automatic table creation for schema upgrades.
+The default local database is SQLite. Set `DATABASE_URL` to a PostgreSQL SQLAlchemy URL (for example, `postgresql+psycopg://user:password@localhost:5432/inventoryx`) to use PostgreSQL. The GitHub Actions workflow runs the API tests against isolated SQLite fixtures and applies the Alembic migrations to a temporary PostgreSQL 16 service. The migration directory is the schema-change source of truth; do not rely on automatic table creation for schema upgrades.
 
 The API is available at `http://127.0.0.1:8000`. Interactive documentation is at `/docs` and `/redoc`.
 
@@ -130,7 +132,7 @@ Consult the generated OpenAPI schema at `/docs` for request and response models,
 python -m pytest -v
 ```
 
-Tests configure a test-only secret and use an isolated in-memory SQLite database. They do not require the local development database. The GitHub Actions workflow runs the test suite on pushes and pull requests.
+Tests configure a test-only secret and use an isolated in-memory SQLite database. They do not require the local development database. GitHub Actions runs the test suite on pushes and pull requests, then verifies that the Alembic migration head can be applied to PostgreSQL.
 
 ## Known scope and limitations
 
