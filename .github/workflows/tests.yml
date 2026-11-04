@@ -11,6 +11,23 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: inventoryx_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d inventoryx_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/inventoryx_test
+      SECRET_KEY: ci-only-inventoryx-signing-secret-never-use-outside-ci
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -21,5 +38,22 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
-      - name: Run tests
+      - name: Run API tests
         run: python -m pytest -v
+      - name: Apply Alembic migrations to PostgreSQL
+        run: alembic upgrade head
+      - name: Verify PostgreSQL migration state
+        run: |
+          python - <<'PY'
+          import os
+          from sqlalchemy import create_engine, text
+
+          engine = create_engine(os.environ["DATABASE_URL"])
+          with engine.connect() as connection:
+              revision = connection.execute(
+                  text("SELECT version_num FROM alembic_version")
+              ).scalar_one()
+              assert revision, "Alembic migration revision was not recorded"
+              print(f"PostgreSQL migration revision: {revision}")
+          engine.dispose()
+          PY
