@@ -77,7 +77,8 @@ def list_orders(db: Session, user_id: int, offset: int = 0, limit: int = 100) ->
 
 
 def cancel_order(db: Session, order_id: int, user_id: int) -> Order:
-    order = order_repository.get_order(db, order_id, user_id)
+    # Lock the order row so concurrent cancellations cannot restore stock twice.
+    order = order_repository.get_order(db, order_id, user_id, for_update=True)
     if order is None:
         raise HTTPException(status_code=404, detail="Order not found")
     if order.status == "cancelled":
