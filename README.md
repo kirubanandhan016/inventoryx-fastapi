@@ -14,6 +14,7 @@ InventoryX demonstrates backend workflows for product and category management, s
 - Product and category CRUD
 - Inventory adjustment endpoint and transaction history
 - Authenticated order placement, retrieval, and cancellation
+- Order-row locking during cancellation to prevent concurrent requests from restoring the same stock twice on databases that support row-level locks
 - SQLAlchemy ORM and Alembic migrations
 - Interactive OpenAPI documentation
 - Pytest API tests using an isolated in-memory SQLite database
@@ -132,11 +133,11 @@ Consult the generated OpenAPI schema at `/docs` for request and response models,
 python -m pytest -v
 ```
 
-Tests configure a test-only secret and use an isolated in-memory SQLite database. They do not require the local development database. GitHub Actions runs the test suite on pushes and pull requests, then verifies that the Alembic migration head can be applied to PostgreSQL.
+Tests configure a test-only secret and use an isolated in-memory SQLite database. They do not require the local development database. GitHub Actions runs the test suite on pushes and pull requests, applies the Alembic migrations to PostgreSQL 16, and verifies the recorded migration revision. The current tests exercise sequential order cancellation; concurrent PostgreSQL request behavior should receive an additional integration test.
 
 ## Known scope and limitations
 
-This is a portfolio and learning project. It is not independently security-audited for production deployment. Review deployment configuration, rate limiting, logging, database backup, operational monitoring, and token revocation requirements before exposing it to public traffic. PostgreSQL compatibility should be tested before claiming PostgreSQL support.
+This is a portfolio and learning project. It is not independently security-audited for production deployment. Review deployment configuration, rate limiting, logging, database backup, operational monitoring, and token revocation requirements before exposing it to public traffic. CI verifies that the migrations apply on PostgreSQL 16, but full API workflow and concurrent inventory integration tests against PostgreSQL remain useful next steps.
 
 ## Author
 
