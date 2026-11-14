@@ -18,11 +18,17 @@ from app.main import app
 
 @pytest.fixture
 def client():
-    engine = create_engine(
-        "sqlite://",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
+    test_database_url = os.getenv("TEST_DATABASE_URL")
+    if test_database_url:
+        # CI uses PostgreSQL so integration tests exercise the production dialect.
+        engine = create_engine(test_database_url, pool_pre_ping=True)
+    else:
+        # Fast, isolated in-memory database for local development.
+        engine = create_engine(
+            "sqlite://",
+            connect_args={"check_same_thread": False},
+            poolclass=StaticPool,
+        )
     testing_session = sessionmaker(bind=engine, autoflush=False, autocommit=False)
     Base.metadata.create_all(bind=engine)
 
