@@ -35,6 +35,22 @@ Python 3.10+ · FastAPI · SQLAlchemy · Alembic · SQLite · PostgreSQL (psycop
 - `alembic/`: versioned database migrations
 - `tests/`: authentication, product, inventory, category, and order tests
 
+## Request flow and architecture
+
+```mermaid
+flowchart TD
+    C[API client] --> R[FastAPI routers]
+    R --> D[Authentication and DB dependencies]
+    R --> S[Service layer]
+    S --> Q[Repository layer]
+    Q --> M[SQLAlchemy models]
+    M --> DB[(SQLite / PostgreSQL)]
+    A[Alembic migrations] --> DB
+    T[Pytest suite] --> R
+```
+
+Routers handle HTTP concerns, services coordinate business rules, repositories encapsulate database access, and SQLAlchemy models represent persisted entities. Alembic manages versioned schema changes.
+
 ## Run locally
 
 Create and activate a virtual environment, then install dependencies:
