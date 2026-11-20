@@ -17,7 +17,7 @@ InventoryX demonstrates backend workflows for product and category management, s
 - Order-row locking during cancellation to prevent concurrent requests from restoring the same stock twice on databases that support row-level locks
 - SQLAlchemy ORM and Alembic migrations
 - Interactive OpenAPI documentation
-- Pytest API tests using an isolated in-memory SQLite database
+- Pytest API tests using isolated SQLite locally and PostgreSQL in GitHub Actions
 
 ## Technology stack
 
@@ -115,6 +115,28 @@ uvicorn app.main:app --reload
 The default local database is SQLite. Set `DATABASE_URL` to a PostgreSQL SQLAlchemy URL (for example, `postgresql+psycopg://user:password@localhost:5432/inventoryx`) to use PostgreSQL. The GitHub Actions workflow runs the API tests against isolated SQLite fixtures and applies the Alembic migrations to a temporary PostgreSQL 16 service. The migration directory is the schema-change source of truth; do not rely on automatic table creation for schema upgrades.
 
 The API is available at `http://127.0.0.1:8000`. Interactive documentation is at `/docs` and `/redoc`.
+
+## Run with Docker Compose
+
+Docker Compose starts PostgreSQL and the API. The API container applies Alembic migrations before starting Uvicorn.
+
+PowerShell:
+
+```powershell
+$env:POSTGRES_PASSWORD = "use-a-long-local-password"
+$env:SECRET_KEY = python -c "import secrets; print(secrets.token_urlsafe(48))"
+docker compose up --build
+```
+
+macOS/Linux:
+
+```bash
+export POSTGRES_PASSWORD='use-a-long-local-password'
+export SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(48))')"
+docker compose up --build
+```
+
+Open `http://localhost:8000/docs`. Stop the containers with `docker compose down`; add `-v` only when you intentionally want to delete the local PostgreSQL volume and its data. Use a URL-safe alphanumeric database password for this Compose example. Never reuse these local credentials in production.
 
 ## Authentication flow
 
