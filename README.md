@@ -116,6 +116,28 @@ The default local database is SQLite. Set `DATABASE_URL` to a PostgreSQL SQLAlch
 
 The API is available at `http://127.0.0.1:8000`. Interactive documentation is at `/docs` and `/redoc`.
 
+## Run with Docker Compose
+
+Docker Compose starts PostgreSQL and the API. The API container applies Alembic migrations before starting Uvicorn.
+
+PowerShell:
+
+```powershell
+$env:POSTGRES_PASSWORD = "use-a-long-local-password"
+$env:SECRET_KEY = python -c "import secrets; print(secrets.token_urlsafe(48))"
+docker compose up --build
+```
+
+macOS/Linux:
+
+```bash
+export POSTGRES_PASSWORD='use-a-long-local-password'
+export SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(48))')"
+docker compose up --build
+```
+
+Open `http://localhost:8000/docs`. Stop the containers with `docker compose down`; add `-v` only when you intentionally want to delete the local PostgreSQL volume and its data. Use a URL-safe alphanumeric database password for this Compose example. Never reuse these local credentials in production.
+
 ## Authentication flow
 
 1. Register with `POST /auth/register` using email, full name, and password.
