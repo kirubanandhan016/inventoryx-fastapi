@@ -17,7 +17,7 @@ InventoryX demonstrates backend workflows for product and category management, s
 - Order-row locking during cancellation to prevent concurrent requests from restoring the same stock twice on databases that support row-level locks
 - SQLAlchemy ORM and Alembic migrations
 - Interactive OpenAPI documentation
-- Pytest API tests using an isolated in-memory SQLite database
+- Pytest API tests using isolated SQLite locally and PostgreSQL in GitHub Actions
 
 ## Technology stack
 
