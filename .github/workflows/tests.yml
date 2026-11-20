@@ -58,3 +58,6 @@ jobs:
               print(f"PostgreSQL migration revision: {revision}")
           engine.dispose()
           PY
+
+      - name: Build Docker image
+        run: docker build --tag inventoryx-fastapi:ci .
