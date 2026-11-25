@@ -184,3 +184,16 @@ This is a portfolio and learning project. It is not independently security-audit
 - GitHub: [@kirubanandhan016](https://github.com/kirubanandhan016)
 - Portfolio: [kirubanandhan016.github.io](https://kirubanandhan016.github.io/)
 - LinkedIn: [Kirubanandhan V](https://www.linkedin.com/in/kirubanandhan-v-98bb83443/)
+
+
+## Verification and operational boundaries
+
+| Check | Current coverage |
+|---|---|
+| API behavior | Pytest with isolated SQLite fixtures |
+| Schema evolution | Alembic migrations applied in PostgreSQL 16 CI |
+| Sequential order cancellation | Covered by the current API tests |
+| Concurrent PostgreSQL stock/order workflows | Additional integration coverage recommended |
+
+For production-oriented work, prioritize PostgreSQL integration tests for concurrent inventory adjustments and order cancellation, plus rate limiting, structured logs, metrics, backups, and an explicit token-revocation strategy. A passing CI migration check is not equivalent to a production-readiness or security audit.
+
