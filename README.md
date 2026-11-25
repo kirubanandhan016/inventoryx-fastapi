@@ -14,7 +14,8 @@ InventoryX demonstrates backend workflows for product and category management, s
 - Product and category CRUD
 - Inventory adjustment endpoint and transaction history
 - Authenticated order placement, retrieval, and cancellation
-- Order-row locking during cancellation to prevent concurrent requests from restoring the same stock twice on databases that support row-level locks
+- Row-level locking for order placement and cancellation to prevent overselling and duplicate stock restoration on PostgreSQL
+- Database CHECK constraints for non-negative product prices and stock, valid order states, positive order quantities, and non-negative order totals
 - SQLAlchemy ORM and Alembic migrations
 - Interactive OpenAPI documentation
 - Pytest API tests using isolated SQLite locally and PostgreSQL in GitHub Actions
@@ -171,11 +172,16 @@ Consult the generated OpenAPI schema at `/docs` for request and response models,
 python -m pytest -v
 ```
 
-Tests configure a test-only secret and use an isolated in-memory SQLite database. They do not require the local development database. GitHub Actions runs the test suite on pushes and pull requests, applies the Alembic migrations to PostgreSQL 16, and verifies the recorded migration revision. The current tests exercise sequential order cancellation; concurrent PostgreSQL request behavior should receive an additional integration test.
+Tests configure a test-only secret and use an isolated in-memory SQLite database locally. GitHub Actions runs the API suite against PostgreSQL 16, applies the Alembic migrations, verifies the recorded revision, and builds the Docker image. PostgreSQL-only concurrency tests exercise competing orders for the final stock unit and simultaneous order cancellations.
+
+
+## Production deployment template
+
+A VPS deployment template using Docker Compose, PostgreSQL, and Caddy-managed HTTPS is available in [deploy/README.md](deploy/README.md). It keeps PostgreSQL private, runs the API container as a non-root user, applies Alembic migrations at startup, and provides health checks. Copy `.env.production.example` to a private `.env.production` file and configure your own domain and generated secrets. This repository change does not itself create a cloud deployment or public demo URL.
 
 ## Known scope and limitations
 
-This is a portfolio and learning project. It is not independently security-audited for production deployment. Review deployment configuration, rate limiting, logging, database backup, operational monitoring, and token revocation requirements before exposing it to public traffic. CI verifies that the migrations apply on PostgreSQL 16, but full API workflow and concurrent inventory integration tests against PostgreSQL remain useful next steps.
+This is a portfolio and learning project. It is not independently security-audited for production deployment. Review deployment configuration, rate limiting, logging, database backup, operational monitoring, and token revocation requirements before exposing it to public traffic. CI verifies PostgreSQL migrations and concurrent order locking. Full load testing, rate limiting, operational monitoring, token revocation, backups, and an independent security audit remain future deployment work.
 
 ## Author
 

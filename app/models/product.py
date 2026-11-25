@@ -1,7 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String, func
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, Numeric, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.session import Base
@@ -9,6 +9,10 @@ from app.database.session import Base
 
 class Product(Base):
     __tablename__ = "products"
+    __table_args__ = (
+        CheckConstraint("price >= 0", name="ck_products_price_nonnegative"),
+        CheckConstraint("quantity >= 0", name="ck_products_quantity_nonnegative"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     sku: Mapped[str] = mapped_column(String(64), unique=True, index=True)
