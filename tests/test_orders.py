@@ -1,3 +1,8 @@
+import os
+from concurrent.futures import ThreadPoolExecutor
+
+import pytest
+
 def test_order_places_deducts_stock_and_cancellation_restores_it(client, auth_headers):
     product = client.post(
         "/products",
@@ -96,3 +101,53 @@ def test_order_is_not_visible_to_a_different_account(client, auth_headers):
     order_id = created.json()["id"]
     assert client.get(f"/orders/{order_id}", headers=other_headers).status_code == 404
     assert client.get("/orders", headers=other_headers).json() == []
+
+
+@pytest.mark.skipif(
+    not os.getenv("TEST_DATABASE_URL"),
+    reason="Concurrent row-lock behavior is verified against PostgreSQL in CI.",
+)
+def test_concurrent_orders_cannot_oversell_last_unit(client, auth_headers):
+    product = client.post(
+        "/products",
+        json={"sku": "ORDER-RACE", "name": "Last unit", "price": "8.00", "quantity": 1},
+        headers=auth_headers,
+    ).json()
+    payload = {"items": [{"product_id": product["id"], "quantity": 1}]}
+
+    def place_order():
+        return client.post("/orders", json=payload, headers=auth_headers).status_code
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        statuses = list(pool.map(lambda _: place_order(), range(2)))
+
+    assert sorted(statuses) == [201, 409]
+    assert client.get(f"/products/{product['id']}").json()["quantity"] == 0
+
+
+@pytest.mark.skipif(
+    not os.getenv("TEST_DATABASE_URL"),
+    reason="Concurrent row-lock behavior is verified against PostgreSQL in CI.",
+)
+def test_concurrent_cancellations_restore_stock_only_once(client, auth_headers):
+    product = client.post(
+        "/products",
+        json={"sku": "ORDER-CANCEL-RACE", "name": "Cancel race", "price": "8.00", "quantity": 3},
+        headers=auth_headers,
+    ).json()
+    created = client.post(
+        "/orders",
+        json={"items": [{"product_id": product["id"], "quantity": 2}]},
+        headers=auth_headers,
+    )
+    assert created.status_code == 201
+    order_id = created.json()["id"]
+
+    def cancel_order():
+        return client.post(f"/orders/{order_id}/cancel", headers=auth_headers).status_code
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        statuses = list(pool.map(lambda _: cancel_order(), range(2)))
+
+    assert sorted(statuses) == [200, 409]
+    assert client.get(f"/products/{product['id']}").json()["quantity"] == 3
