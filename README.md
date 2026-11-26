@@ -184,3 +184,17 @@ This is a portfolio and learning project. It is not independently security-audit
 - GitHub: [@kirubanandhan016](https://github.com/kirubanandhan016)
 - Portfolio: [kirubanandhan016.github.io](https://kirubanandhan016.github.io/)
 - LinkedIn: [Kirubanandhan V](https://www.linkedin.com/in/kirubanandhan-v-98bb83443/)
+
+
+## Portfolio documentation
+
+- [Architecture diagram](docs/ARCHITECTURE.md)
+- [Database ER diagram](docs/ER_DIAGRAM.md)
+- [API request examples](docs/API_EXAMPLES.md)
+- Swagger/OpenAPI: `/docs`; ReDoc: `/redoc` after starting the API.
+- [Environment template](.env.example); copy to `.env`, generate a unique secret, and never commit credentials.
+- Tests: `python -m pytest -v`; CI also checks PostgreSQL migrations.
+
+## Screenshots and deployment
+
+A verified public deployment URL and committed screenshots are not available yet. Capture Swagger UI and product, inventory, and order API responses after running locally. Redact tokens and personal data; store approved images under `docs/screenshots/`. Add a live URL only after deployment and health-check verification.
